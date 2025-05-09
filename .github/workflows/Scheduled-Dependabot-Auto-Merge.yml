@@ -13,6 +13,9 @@ jobs:
   merge-dependabot:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Install GitHub CLI
         run: |
           sudo apt update
@@ -24,7 +27,7 @@ jobs:
         run: |
           echo "🔍 Fetching all Dependabot PRs targeting 'dependabotchanges'..."
           > matched_prs.txt
-          pr_batch=$(gh pr list --state open --json number,title,author,baseRefName,url \
+          pr_batch=$(gh pr list --state open --limit 5 --json number,title,author,baseRefName,url \
             --jq '.[] | "\(.number)|\(.title)|\(.author.login)|\(.baseRefName)|\(.url)"')
           while IFS='|' read -r number title author base url; do
             author=$(echo "$author" | xargs)
@@ -73,7 +76,7 @@ jobs:
             attempt=0
             max_attempts=8
             mergeable=""
-            sleep 5
+            sleep 5  # Initial delay to allow GitHub to compute mergeability
             while [[ $attempt -lt $max_attempts ]]; do
               mergeable=$(gh pr view "$pr_number" --json mergeable --jq '.mergeable' 2>/dev/null || echo "UNKNOWN")
               echo "🔁 Attempt $((attempt+1))/$max_attempts: mergeable=$mergeable"
